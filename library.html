@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Library Management System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    .section {
+      margin-top: 30px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    .borrowed {
+      color: #888;
+    }
+    .available {
+      color: green;
+    }
+    .unavailable {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React via CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+  <!-- React App -->
+  <script type="text/babel">
+    const { useState } = React;
+
+    function App() {
+      const [books, setBooks] = useState([
+        { id: 1, title: '1984', author: 'George Orwell', available: 3 },
+        { id: 2, title: 'To Kill a Mockingbird', author: 'Harper Lee', available: 2 },
+        { id: 3, title: 'The Great Gatsby', author: 'F. Scott Fitzgerald', available: 1 }
+      ]);
+
+      const [customers, setCustomers] = useState([]);
+      const [customerName, setCustomerName] = useState('');
+      const [selectedCustomerId, setSelectedCustomerId] = useState('');
+      const [selectedBookId, setSelectedBookId] = useState('');
+
+      const addCustomer = (e) => {
+        e.preventDefault();
+        if (!customerName.trim()) return;
+        const newCustomer = {
+          id: Date.now(),
+          name: customerName,
+          borrowedBooks: []
+        };
+        setCustomers([...customers, newCustomer]);
+        setCustomerName('');
+      };
+
+      const borrowBook = (e) => {
+        e.preventDefault();
+        const customer = customers.find(c => c.id === parseInt(selectedCustomerId));
+        const book = books.find(b => b.id === parseInt(selectedBookId));
+
+        if (!customer || !book || book.available <= 0) return;
+
+        // Update book availability
+        const updatedBooks = books.map(b => 
+          b.id === book.id ? { ...b, available: b.available - 1 } : b
+        );
+        setBooks(updatedBooks);
+
+        // Update customer borrowed list
+        const updatedCustomers = customers.map(c => {
+          if (c.id === customer.id) {
+            return {
+              ...c,
+              borrowedBooks: [...c.borrowedBooks, { title: book.title, author: book.author }]
+            };
+          }
+          return c;
+        });
+        setCustomers(updatedCustomers);
+      };
+
+      return (
+        <div className="container">
+          <h1>📚 Library Management System</h1>
+
+          {/* Customer Section */}
+          <div className="section">
+            <h2>Add New Customer</h2>
+            <form onSubmit={addCustomer}>
+              <input
+                type="text"
+                placeholder="Customer Name"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+              <button type="submit">Add Customer</button>
+            </form>
+          </div>
+
+          {/* Book Inventory */}
+          <div className="section">
+            <h2>Books Available</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>Availability</th>
+                </tr>
+              </thead>
+              <tbody>
+                {books.map(book => (
+                  <tr key={book.id}>
+                    <td>{book.title}</td>
+                    <td>{book.author}</td>
+                    <td className={book.available > 0 ? "available" : "unavailable"}>
+                      {book.available > 0 ? `${book.available} available` : 'Not available'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Borrow Book */}
+          <div className="section">
+            <h2>Borrow a Book</h2>
+            <form onSubmit={borrowBook}>
+              <select
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+              >
+                <option value="">Select Customer</option>
+                {customers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <select
+                value={selectedBookId}
+                onChange={(e) => setSelectedBookId(e.target.value)}
+              >
+                <option value="">Select Book</option>
+                {books.map(b => (
+                  <option
+                    key={b.id}
+                    value={b.id}
+                    disabled={b.available <= 0}
+                  >
+                    {b.title} by {b.author}
+                  </option>
+                ))}
+              </select>
+              <button type="submit">Borrow</button>
+            </form>
+          </div>
+
+          {/* Customer List */}
+          <div className="section">
+            <h2>Customers and Borrowed Books</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Borrowed Books</th>
+                </tr>
+              </thead>
+              <tbody>
+                {customers.map(c => (
+                  <tr key={c.id}>
+                    <td>{c.name}</td>
+                    <td>
+                      {c.borrowedBooks.length === 0 ? (
+                        <span className="borrowed">None</span>
+                      ) : (
+                        <ul>
+                          {c.borrowedBooks.map((b, i) => (
+                            <li key={i}>{b.title} by {b.author}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
